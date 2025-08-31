@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfume Collection Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        },
+                        orange: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            200: '#fed7aa',
+                            300: '#fdba74',
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            800: '#9a3412',
+                            900: '#7c2d12',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">Perfume Collection Manager</h1>
+                    <p class="text-amber-100">Organiza tu colección de perfumes árabes y favoritos</p>
+                </div>
+                <button
+                    onclick="showAddForm()"
+                    class="mt-4 md:mt-0 bg-white text-amber-600 px-6 py-3 rounded-lg font-semibold hover:bg-amber-50 transition-colors duration-200 shadow-md"
+                >
+                    + Añadir Perfume
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Controls -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1">
+                    <label class="block text-gray-700 font-semibold mb-3">Temporada</label>
+                    <div class="flex gap-2">
+                        <button
+                            onclick="setCurrentSeason('all')"
+                            class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 capitalize bg-amber-600 text-white"
+                        >
+                            Todos
+                        </button>
+                        <button
+                            onclick="setCurrentSeason('summer')"
+                            class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 capitalize bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        >
+                            Verano
+                        </button>
+                        <button
+                            onclick="setCurrentSeason('winter')"
+                            class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 capitalize bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        >
+                            Invierno
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1">
+                    <label class="block text-gray-700 font-semibold mb-3">Ordenar por</label>
+                    <select
+                        onchange="setSortBy(this.value)"
+                        class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    >
+                        <option value="priority">Prioridad</option>
+                        <option value="name">Nombre</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Perfumes List -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
+                <h2 class="text-xl font-bold text-gray-800">Colección de Perfumes</h2>
+            </div>
+            
+            <div class="divide-y divide-gray-200" id="perfumesList">
+                <!-- Perfumes will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Wishlist Section -->
+        <div id="wishlistSection" class="hidden mt-12 bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                Lista de Deseos (<span id="wishlistCount">0</span>)
+            </h2>
+            <div id="wishlistItems" class="space-y-3">
+                <!-- Wishlist items will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Perfume Modal -->
+    <div id="addForm" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Añadir Nuevo Perfume</h2>
+                    <button
+                        onclick="hideAddForm()"
+                        class="text-gray-500 hover:text-gray-700"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Nombre</label>
+                        <input
+                            type="text"
+                            id="newPerfumeName"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                            placeholder="Nombre del perfume"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">URL de Imagen (opcional)</label>
+                        <input
+                            type="text"
+                            id="newPerfumeImage"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                            placeholder="https://ejemplo.com/perfume.jpg"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Temporada</label>
+                        <select
+                            id="newPerfumeSeason"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        >
+                            <option value="summer">Verano</option>
+                            <option value="winter">Invierno</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="newIsDup"
+                            onchange="toggleDupFields()"
+                            class="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                        />
+                        <label for="newIsDup" class="text-gray-700">
+                            Es un duplicado
+                        </label>
+                    </div>
+
+                    <div id="newDupFields" class="hidden space-y-2">
+                        <label class="block text-gray-700 font-medium mb-2">Nombre del perfume original</label>
+                        <input
+                            type="text"
+                            id="newDupName"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                            placeholder="Nombre del perfume original"
+                        />
+                        
+                        <label class="block text-gray-700 font-medium mb-2">URL de Imagen del original (opcional)</label>
+                        <input
+                            type="text"
+                            id="newDupImage"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                            placeholder="https://ejemplo.com/original.jpg"
+                        />
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button
+                        onclick="addNewPerfume()"
+                        class="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors duration-200"
+                    >
+                        Añadir Perfume
+                    </button>
+                    <button
+                        onclick="hideAddForm()"
+                        class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-200"
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Perfume Modal -->
+    <div id="editForm" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Editar Perfume</h2>
+                    <button
+                        onclick="hideEditForm()"
+                        class="text-gray-500 hover:text-gray-700"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Nombre</label>
+                        <input
+                            type="text"
+                            id="editPerfumeName"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">URL de Imagen</label>
+                        <input
+                            type="text"
+                            id="editPerfumeImage"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Temporada</label>
+                        <select
+                            id="editPerfumeSeason"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        >
+                            <option value="summer">Verano</option>
+                            <option value="winter">Invierno</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="editIsDup"
+                            onchange="toggleEditDupFields()"
+                            class="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                        />
+                        <label for="editIsDup" class="text-gray-700">
+                            Es un duplicado
+                        </label>
+                    </div>
+
+                    <div id="editDupFields" class="hidden space-y-2">
+                        <label class="block text-gray-700 font-medium mb-2">Nombre del perfume original</label>
+                        <input
+                            type="text"
+                            id="editDupName"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        />
+                        
+                        <label class="block text-gray-700 font-medium mb-2">URL de Imagen del original</label>
+                        <input
+                            type="text"
+                            id="editDupImage"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        />
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button
+                        onclick="saveEditPerfume()"
+                        class="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors duration-200"
+                    >
+                        Guardar Cambios
+                    </button>
+                    <button
+                        onclick="hideEditForm()"
+                        class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-200"
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize data
+        let perfumes = [
+            {
+                id: 1,
+                name: "Arabian Oud",
+                image: "https://placehold.co/300x400/8B4513/FFFFFF?text=Arabian+Oud",
+                season: "winter",
+                isDup: false,
+                dupOf: null,
+                priority: 1
+            },
+            {
+                id: 2,
+                name: "Desert Bloom",
+                image: "https://placehold.co/300x400/D2691E/FFFFFF?text=Desert+Bloom",
+                season: "summer",
+                isDup: true,
+                dupOf: 1,
+                priority: 2,
+                dupName: "Arabian Oud",
+                dupImage: "https://placehold.co/300x400/8B4513/FFFFFF?text=Arabian+Oud"
+            },
+            {
+                id: 3,
+                name: "Golden Sands",
+                image: "https://placehold.co/300x400/CD853F/FFFFFF?text=Golden+Sands",
+                season: "summer",
+                isDup: false,
+                dupOf: null,
+                priority: 3
+            },
+            {
+                id: 4,
+                name: "Royal Musk",
+                image: "https://placehold.co/300x400/8B0000/FFFFFF?text=Royal+Musk",
+                season: "winter",
+                isDup: false,
+                dupOf: null,
+                priority: 4
+            }
+        ];
+
+        let wishlist = [1, 3];
+        let currentSeason = "all";
+        let sortBy = "priority";
+        let editingPerfume = null;
+        let dragItem = null;
+        let dragOverItem = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            renderPerfumes();
+            updateWishlist();
+        });
+
+        // Show add form
+        function showAddForm() {
+            document.getElementById('addForm').classList.remove('hidden');
+            document.getElementById('newPerfumeName').value = '';
+            document.getElementById('newPerfumeImage').value = '';
+            document.getElementById('newPerfumeSeason').value = 'summer';
+            document.getElementById('newIsDup').checked = false;
+            document.getElementById('newDupFields').classList.add('hidden');
+            document.getElementById('newDupName').value = '';
+            document.getElementById('newDupImage').value = '';
+        }
+
+        // Hide add form
+        function hideAddForm() {
+            document.getElementById('addForm').classList.add('hidden');
+        }
+
+        // Show edit form
+        function showEditForm() {
+            document.getElementById('editForm').classList.remove('hidden');
+        }
+
+        // Hide edit form
+        function hideEditForm() {
+            document.getElementById('editForm').classList.add('hidden');
+        }
+
+        // Toggle duplicate fields in add form
+        function toggleDupFields() {
+            const isDup = document.getElementById('newIsDup').checked;
+            document.getElementById('newDupFields').classList.toggle('hidden', !isDup);
+        }
+
+        // Toggle duplicate fields in edit form
+        function toggleEditDupFields() {
+            const isDup = document.getElementById('editIsDup').checked;
+            document.getElementById('editDupFields').classList.toggle('hidden', !isDup);
+        }
+
+        // Set current season
+        function setCurrentSeason(season) {
+            currentSeason = season;
+            // Update button styles
+            document.querySelectorAll('[onclick^="setCurrentSeason"]').forEach(btn => {
+                btn.classList.remove('bg-amber-600', 'text-white');
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+            });
+            
+            if (season === 'all') {
+                document.querySelector('[onclick="setCurrentSeason(\'all\')"]').classList.remove('bg-gray-100', 'text-gray-700');
+                document.querySelector('[onclick="setCurrentSeason(\'all\')"]').classList.add('bg-amber-600', 'text-white');
+            } else if (season === 'summer') {
+                document.querySelector('[onclick="setCurrentSeason(\'summer\')"]').classList.remove('bg-gray-100', 'text-gray-700');
+                document.querySelector('[onclick="setCurrentSeason(\'summer\')"]').classList.add('bg-amber-600', 'text-white');
+            } else {
+                document.querySelector('[onclick="setCurrentSeason(\'winter\')"]').classList.remove('bg-gray-100', 'text-gray-700');
+                document.querySelector('[onclick="setCurrentSeason(\'winter\')"]').classList.add('bg-amber-600', 'text-white');
+            }
+            
+            renderPerfumes();
+        }
+
+        // Set sort by
+        function setSortBy(value) {
+            sortBy = value;
+            renderPerfumes();
+        }
+
+        // Add new perfume
+        function addNewPerfume() {
+            const name = document.getElementById('newPerfumeName').value;
+            if (!name) return;
+            
+            const newId = Math.max(...perfumes.map(p => p.id)) + 1;
+            const maxPriority = Math.max(...perfumes.map(p => p.priority));
+            const isDup = document.getElementById('newIsDup').checked;
+            
+            const newPerfume = {
+                id: newId,
+                name: name,
+                image: document.getElementById('newPerfumeImage').value || `https://placehold.co/300x400/6B46C1/FFFFFF?text=${encodeURIComponent(name)}`,
+                season: document.getElementById('newPerfumeSeason').value,
+                isDup: isDup,
+                dupOf: null,
+                priority: maxPriority + 1
+            };
+            
+            if (isDup) {
+                newPerfume.dupName = document.getElementById('newDupName').value;
+                newPerfume.dupImage = document.getElementById('newDupImage').value;
+            }
+            
+            perfumes.push(newPerfume);
+            hideAddForm();
+            renderPerfumes();
+        }
+
+        // Start editing a perfume
+        function startEditing(perfumeId) {
+            const perfume = perfumes.find(p => p.id === perfumeId);
+            editingPerfume = { ...perfume };
+            
+            document.getElementById('editPerfumeName').value = perfume.name;
+            document.getElementById('editPerfumeImage').value = perfume.image;
+            document.getElementById('editPerfumeSeason').value = perfume.season;
+            document.getElementById('editIsDup').checked = perfume.isDup;
+            
+            if (perfume.isDup) {
+                document.getElementById('editDupName').value = perfume.dupName || '';
+                document.getElementById('editDupImage').value = perfume.dupImage || '';
+                document.getElementById('editDupFields').classList.remove('hidden');
+            } else {
+                document.getElementById('editDupFields').classList.add('hidden');
+            }
+            
+            showEditForm();
+        }
+
+        // Save edited perfume
+        function saveEditPerfume() {
+            const updatedPerfume = {
+                ...editingPerfume,
+                name: document.getElementById('editPerfumeName').value,
+                image: document.getElementById('editPerfumeImage').value,
+                season: document.getElementById('editPerfumeSeason').value,
+                isDup: document.getElementById('editIsDup').checked
+            };
+            
+            if (updatedPerfume.isDup) {
+                updatedPerfume.dupName = document.getElementById('editDupName').value;
+                updatedPerfume.dupImage = document.getElementById('editDupImage').value;
+            }
+            
+            perfumes = perfumes.map(p => p.id === updatedPerfume.id ? updatedPerfume : p);
+            hideEditForm();
+            renderPerfumes();
+        }
+
+        // Handle adding to wishlist
+        function handleAddToWishlist(id) {
+            if (wishlist.includes(id)) {
+                wishlist = wishlist.filter(item => item !== id);
+            } else {
+                wishlist.push(id);
+            }
+            updateWishlist();
+            renderPerfumes();
+        }
+
+        // Update wishlist display
+        function updateWishlist() {
+            const wishlistSection = document.getElementById('wishlistSection');
+            const wishlistCount = document.getElementById('wishlistCount');
+            const wishlistItems = document.getElementById('wishlistItems');
+            
+            if (wishlist.length > 0) {
+                wishlistSection.classList.remove('hidden');
+                wishlistCount.textContent = wishlist.length;
+                
+                // Sort by priority
+                const sortedWishlist = [...perfumes]
+                    .filter(p => wishlist.includes(p.id))
+                    .sort((a, b) => a.priority - b.priority);
+                
+                wishlistItems.innerHTML = '';
+                sortedWishlist.forEach(perfume => {
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center p-4 bg-gray-50 rounded-lg';
+                    item.innerHTML = `
+                        <div class="w-12 h-16 bg-gradient-to-b from-amber-50 to-orange-50 flex items-center justify-center mr-4">
+                            <span class="text-lg font-bold text-amber-600">${perfume.priority}</span>
+                        </div>
+                        <img 
+                            src="${perfume.image}" 
+                            alt="${perfume.name}"
+                            class="w-16 h-20 object-cover rounded mr-4"
+                        />
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800">${perfume.name}</h4>
+                            <p class="text-sm text-gray-600">${perfume.season === 'summer' ? 'Verano' : 'Invierno'}</p>
+                        </div>
+                        <button
+                            onclick="handleAddToWishlist(${perfume.id})"
+                            class="text-red-500 hover:text-red-700 p-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    `;
+                    wishlistItems.appendChild(item);
+                });
+            } else {
+                wishlistSection.classList.add('hidden');
+            }
+        }
+
+        // Handle drag start
+        function handleDragStart(e, index) {
+            dragItem = index;
+            e.dataTransfer.effectAllowed = "move";
+        }
+
+        // Handle drag enter
+        function handleDragEnter(e, index) {
+            dragOverItem = index;
+        }
+
+        // Handle drop
+        function handleDrop(e) {
+            e.preventDefault();
+            if (dragItem === null || dragOverItem === null) return;
+            
+            const copyListItems = [...perfumes].sort((a, b) => a.priority - b.priority);
+            const dragItemContent = copyListItems[dragItem];
+            copyListItems.splice(dragItem, 1);
+            copyListItems.splice(dragOverItem, 0, dragItemContent);
+            
+            // Update priorities based on new order
+            perfumes = perfumes.map(perfume => {
+                const newIndex = copyListItems.findIndex(p => p.id === perfume.id);
+                return { ...perfume, priority: newIndex + 1 };
+            });
+            
+            renderPerfumes();
+            dragItem = null;
+            dragOverItem = null;
+        }
+
+        // Handle drag over
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        // Render perfumes
+        function renderPerfumes() {
+            const perfumesList = document.getElementById('perfumesList');
+            perfumesList.innerHTML = '';
+            
+            // Sort perfumes by priority
+            const sortedPerfumes = [...perfumes].sort((a, b) => a.priority - b.priority);
+            
+            // Filter by season
+            const filteredPerfumes = sortedPerfumes.filter(perfume => {
+                if (currentSeason === "all") return true;
+                return perfume.season === currentSeason;
+            }).sort((a, b) => {
+                if (sortBy === "priority") return a.priority - b.priority;
+                if (sortBy === "name") return a.name.localeCompare(b.name);
+                return 0;
+            });
+            
+            filteredPerfumes.forEach((perfume, index) => {
+                const perfumeElement = document.createElement('div');
+                perfumeElement.className = 'hover:bg-gray-50 transition-colors duration-200';
+                perfumeElement.draggable = true;
+                perfumeElement.ondragstart = (e) => handleDragStart(e, sortedPerfumes.findIndex(p => p.id === perfume.id));
+                perfumeElement.ondragenter = (e) => handleDragEnter(e, sortedPerfumes.findIndex(p => p.id === perfume.id));
+                perfumeElement.ondragover = handleDragOver;
+                perfumeElement.ondrop = handleDrop;
+                
+                perfumeElement.innerHTML = `
+                    <div class="flex">
+                        <!-- Ranking Number (season-specific) -->
+                        <div class="flex-shrink-0 w-16 bg-gradient-to-b from-amber-50 to-orange-50 flex flex-col items-center justify-center py-6 cursor-move active:opacity-50">
+                            <span class="text-2xl font-bold text-amber-600">${index + 1}</span>
+                            <div class="mt-1 text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16l-4-4m0 0l4-4m-4 4h18m0 0l-4 4m4-4l-4-4" />
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <!-- Image -->
+                        <div class="flex-shrink-0 w-32 p-4">
+                            <div class="relative">
+                                <img 
+                                    src="${perfume.image}" 
+                                    alt="${perfume.name}"
+                                    class="w-full h-40 object-cover rounded-lg cursor-move active:opacity-50"
+                                    draggable="true"
+                                    ondragstart="(e) => handleDragStart(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
+                                    ondragenter="(e) => handleDragEnter(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
+                                    ondragover="handleDragOver(event)"
+                                    ondrop="handleDrop(event)"
+                                />
+                                <button
+                                    onclick="handleAddToWishlist(${perfume.id})"
+                                    class="absolute top-2 right-2 p-1 rounded-full transition-colors duration-200 ${wishlist.includes(perfume.id) ? 'bg-red-500 text-white' : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'}"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Details -->
+                        <div class="flex-1 p-6 cursor-move active:opacity-50" 
+                             draggable="true"
+                             ondragstart="(e) => handleDragStart(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
+                             ondragenter="(e) => handleDragEnter(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
+                             ondragover="handleDragOver(event)"
+                             ondrop="handleDrop(event)">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800 mb-1">${perfume.name}</h3>
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${perfume.season === 'summer' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
+                                        ${perfume.season === 'summer' ? '☀️ Verano' : '❄️ Invierno'}
+                                    </span>
+                                </div>
+                                
+                                <div class="mt-4 md:mt-0 flex items-center gap-2">
+                                    <button
+                                        onclick="startEditing(${perfume.id})"
+                                        class="bg-amber-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-amber-700 transition-colors duration-200 flex items-center gap-1"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Editar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <div class="flex items-center mb-3">
+                                        <input
+                                            type="checkbox"
+                                            id="dup-${perfume.id}"
+                                            ${perfume.isDup ? 'checked' : ''}
+                                            onchange="toggleDup(${perfume.id}, this.checked)"
+                                            class="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                                        />
+                                        <label for="dup-${perfume.id}" class="text-sm text-gray-700 font-medium">
+                                            Es un duplicado
+                                        </label>
+                                    </div>
+
+                                    ${perfume.isDup ? `
+                                    <div class="ml-6 space-y-2">
+                                        <div class="bg-blue-50 border border-blue-200 rounded p-3 flex items-center gap-3">
+                                            <img 
+                                                src="${perfume.dupImage || 'https://placehold.co/60x80/6B46C1/FFFFFF?text=Original'}" 
+                                                alt="${perfume.dupName || 'Original'}"
+                                                class="w-12 h-16 object-cover rounded"
+                                            />
+                                            <div>
+                                                <p class="text-sm text-blue-800 font-semibold">Duplicado de:</p>
+                                                <p class="text-sm text-blue-800">${perfume.dupName || 'Original'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                perfumesList.appendChild(perfumeElement);
+            });
+            
+            updateWishlist();
+        }
+
+        // Toggle duplicate status
+        function toggleDup(id, isDup) {
+            perfumes = perfumes.map(p => {
+                if (p.id === id) {
+                    return { ...p, isDup: isDup };
+                }
+                return p;
+            });
+            renderPerfumes();
+        }
+    </script>
+</body>
+</html>
