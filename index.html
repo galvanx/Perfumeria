@@ -496,26 +496,33 @@
 
         // Change priority
         function changePriority(id, direction) {
-            setPerfumesPriority(id, direction);
-        }
-
-        // Set perfumes priority
-        function setPerfumesPriority(id, direction) {
-            const updated = [...perfumes];
-            const perfume = updated.find(p => p.id === id);
-            const currentIndex = updated.findIndex(p => p.id === id);
+            // Find the perfume and its current index
+            const perfume = perfumes.find(p => p.id === id);
+            const currentIndex = perfumes.findIndex(p => p.id === id);
+            
+            if (!perfume) return;
+            
+            // Determine the target index
             const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
             
-            if (targetIndex >= 0 && targetIndex < updated.length) {
-                // Swap priorities
-                const tempPriority = perfume.priority;
-                perfume.priority = updated[targetIndex].priority;
-                updated[targetIndex].priority = tempPriority;
-                
-                // Sort by priority to maintain order
-                perfumes = updated.sort((a, b) => a.priority - b.priority);
-                renderPerfumes();
+            // Check if the move is valid
+            if (targetIndex < 0 || targetIndex >= perfumes.length) {
+                return;
             }
+            
+            // Create a new array with the items reordered
+            const newPerfumes = [...perfumes];
+            const [removed] = newPerfumes.splice(currentIndex, 1);
+            newPerfumes.splice(targetIndex, 0, removed);
+            
+            // Update priorities based on new order
+            perfumes = newPerfumes.map((p, index) => ({
+                ...p,
+                priority: index + 1
+            }));
+            
+            // Re-render the list
+            renderPerfumes();
         }
 
         // Add new perfume
@@ -681,8 +688,7 @@
                                 <div class="md:hidden flex flex-col gap-1">
                                     <button
                                         onclick="changePriority(${perfume.id}, 'up')"
-                                        disabled="${perfume.priority === 1 ? 'disabled' : ''}"
-                                        class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                        class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
@@ -690,8 +696,7 @@
                                     </button>
                                     <button
                                         onclick="changePriority(${perfume.id}, 'down')"
-                                        disabled="${perfume.priority === perfumes.length ? 'disabled' : ''}"
-                                        class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === perfumes.length ? 'opacity-50 cursor-not-allowed' : ''}"
+                                        class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
