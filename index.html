@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfume Collection Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -41,23 +40,6 @@
             }
         }
     </script>
-    <style>
-        .dragging {
-            opacity: 0.5;
-            transform: scale(1.02);
-            z-index: 1000;
-            position: relative;
-        }
-        
-        .dropzone {
-            min-height: 80px;
-        }
-        
-        .dropzone-over {
-            background-color: rgba(251, 191, 36, 0.1);
-            border: 2px dashed #f59e0b;
-        }
-    </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
     <!-- Header -->
@@ -404,9 +386,6 @@
         let sortBy = "priority";
         let editingPerfume = null;
         let deletingPerfumeId = null;
-        let dragItem = null;
-        let dragOverItem = null;
-        let interactInstances = [];
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -514,6 +493,30 @@
         function setSortBy(value) {
             sortBy = value;
             renderPerfumes();
+        }
+
+        // Change priority
+        function changePriority(id, direction) {
+            setPerfumesPriority(id, direction);
+        }
+
+        // Set perfumes priority
+        function setPerfumesPriority(id, direction) {
+            const updated = [...perfumes];
+            const perfume = updated.find(p => p.id === id);
+            const currentIndex = updated.findIndex(p => p.id === id);
+            const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            
+            if (targetIndex >= 0 && targetIndex < updated.length) {
+                // Swap priorities
+                const tempPriority = perfume.priority;
+                perfume.priority = updated[targetIndex].priority;
+                updated[targetIndex].priority = tempPriority;
+                
+                // Sort by priority to maintain order
+                perfumes = updated.sort((a, b) => a.priority - b.priority);
+                renderPerfumes();
+            }
         }
 
         // Add new perfume
@@ -663,27 +666,41 @@
                 return 0;
             });
             
-            // Clear existing interact instances
-            interactInstances.forEach(instance => {
-                if (instance.interactable) {
-                    instance.interactable.unset();
-                }
-            });
-            interactInstances = [];
-            
             filteredPerfumes.forEach((perfume, index) => {
                 const perfumeElement = document.createElement('div');
-                perfumeElement.className = 'hover:bg-gray-50 transition-colors duration-200 dropzone';
-                perfumeElement.id = `perfume-${perfume.id}`;
-                perfumeElement.setAttribute('data-id', perfume.id);
-                perfumeElement.setAttribute('data-index', index);
+                perfumeElement.className = 'hover:bg-gray-50 transition-colors duration-200';
                 
+                // Mobile view with arrow buttons
                 perfumeElement.innerHTML = `
-                    <div class="flex">
-                        <!-- Ranking Number (season-specific) -->
-                        <div class="flex-shrink-0 w-16 bg-gradient-to-b from-amber-50 to-orange-50 flex flex-col items-center justify-center py-6 cursor-move">
+                    <div class="flex flex-col md:flex-row">
+                        <!-- Ranking and Controls -->
+                        <div class="flex-shrink-0 w-full md:w-16 bg-gradient-to-b from-amber-50 to-orange-50 flex flex-col items-center justify-center py-4 md:py-6">
                             <span class="text-2xl font-bold text-amber-600">${index + 1}</span>
-                            <div class="mt-1 text-gray-400">
+                            
+                            <!-- Mobile arrow buttons -->
+                            <div class="md:hidden flex flex-col gap-1 mt-2">
+                                <button
+                                    onclick="changePriority(${perfume.id}, 'up')"
+                                    disabled="${perfume.priority === 1 ? 'disabled' : ''}"
+                                    class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onclick="changePriority(${perfume.id}, 'down')"
+                                    disabled="${perfume.priority === perfumes.length ? 'disabled' : ''}"
+                                    class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === perfumes.length ? 'opacity-50 cursor-not-allowed' : ''}"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Desktop drag handle -->
+                            <div class="hidden md:block mt-1 text-gray-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16l-4-4m0 0l4-4m-4 4h18m0 0l-4 4m4-4l-4-4" />
                                 </svg>
@@ -691,12 +708,12 @@
                         </div>
                         
                         <!-- Image -->
-                        <div class="flex-shrink-0 w-32 p-4">
+                        <div class="flex-shrink-0 w-full md:w-32 p-4">
                             <div class="relative">
                                 <img 
                                     src="${perfume.image}" 
                                     alt="${perfume.name}"
-                                    class="w-full h-40 object-cover rounded-lg cursor-move"
+                                    class="w-full h-40 object-cover rounded-lg"
                                 />
                                 <button
                                     onclick="handleAddToWishlist(${perfume.id})"
@@ -710,7 +727,7 @@
                         </div>
                         
                         <!-- Details -->
-                        <div class="flex-1 p-6 cursor-move">
+                        <div class="flex-1 p-6">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                                 <div>
                                     <h3 class="text-xl font-bold text-gray-800 mb-1">${perfume.name}</h3>
@@ -758,15 +775,24 @@
 
                                     ${perfume.isDup ? `
                                     <div class="ml-6 space-y-2">
-                                        <div class="bg-blue-50 border border-blue-200 rounded p-3 flex items-center gap-3">
-                                            <img 
-                                                src="${perfume.dupImage || 'https://placehold.co/60x80/6B46C1/FFFFFF?text=Original'}" 
-                                                alt="${perfume.dupName || 'Original'}"
-                                                class="w-12 h-16 object-cover rounded"
-                                            />
-                                            <div>
-                                                <p class="text-sm text-blue-800 font-semibold">Duplicado de:</p>
-                                                <p class="text-sm text-blue-800">${perfume.dupName || 'Original'}</p>
+                                        <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                                            <div class="flex items-start gap-3">
+                                                <img 
+                                                    src="${perfume.dupImage || 'https://placehold.co/60x80/6B46C1/FFFFFF?text=Original'}" 
+                                                    alt="${perfume.dupName || 'Original'}"
+                                                    class="w-12 h-16 object-cover rounded flex-shrink-0 md:hidden"
+                                                />
+                                                <div class="flex-shrink-0 hidden md:block">
+                                                    <img 
+                                                        src="${perfume.dupImage || 'https://placehold.co/60x80/6B46C1/FFFFFF?text=Original'}" 
+                                                        alt="${perfume.dupName || 'Original'}"
+                                                        class="w-16 h-20 object-cover rounded"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm text-blue-800 font-semibold">Duplicado de:</p>
+                                                    <p class="text-sm text-blue-800">${perfume.dupName || 'Original'}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -778,114 +804,7 @@
                 `;
                 
                 perfumesList.appendChild(perfumeElement);
-                
-                // Store interact instance
-                interactInstances.push({
-                    id: perfume.id,
-                    interactable: null
-                });
             });
-            
-            // Initialize interact.js for drag and drop
-            setTimeout(() => {
-                interact('.dropzone')
-                    .draggable({
-                        inertia: true,
-                        modifiers: [
-                            interact.modifiers.restrictRect({
-                                restriction: 'parent',
-                                endOnly: true
-                            })
-                        ],
-                        autoScroll: true,
-                        listeners: {
-                            start (event) {
-                                event.target.classList.add('dragging');
-                            },
-                            move (event) {
-                                const target = event.target;
-                                const { x, y } = target.dataset;
-                                const dx = (parseFloat(x) || 0) + event.dx;
-                                const dy = (parseFloat(y) || 0) + event.dy;
-                                
-                                target.style.transform = `translate(${dx}px, ${dy}px)`;
-                                target.dataset.x = dx;
-                                target.dataset.y = dy;
-                                
-                                // Check for overlapping elements
-                                const rect = target.getBoundingClientRect();
-                                const elements = document.querySelectorAll('.dropzone');
-                                
-                                elements.forEach(el => {
-                                    if (el !== target) {
-                                        const elRect = el.getBoundingClientRect();
-                                        if (rect.top < elRect.bottom && 
-                                            rect.bottom > elRect.top && 
-                                            rect.left < elRect.right && 
-                                            rect.right > elRect.left) {
-                                            el.classList.add('dropzone-over');
-                                        } else {
-                                            el.classList.remove('dropzone-over');
-                                        }
-                                    }
-                                });
-                            },
-                            end (event) {
-                                event.target.classList.remove('dragging');
-                                event.target.style.transform = '';
-                                event.target.removeAttribute('data-x');
-                                event.target.removeAttribute('data-y');
-                                
-                                // Reset all dropzone classes
-                                document.querySelectorAll('.dropzone').forEach(el => {
-                                    el.classList.remove('dropzone-over');
-                                });
-                                
-                                // Find the target element
-                                const target = event.target;
-                                const mouseY = event.clientY;
-                                const elements = Array.from(document.querySelectorAll('.dropzone')).filter(el => el !== target);
-                                
-                                let newIndex = -1;
-                                for (let i = 0; i < elements.length; i++) {
-                                    const rect = elements[i].getBoundingClientRect();
-                                    const center = (rect.top + rect.bottom) / 2;
-                                    
-                                    if (mouseY < center) {
-                                        newIndex = i;
-                                        break;
-                                    }
-                                }
-                                
-                                if (newIndex === -1) {
-                                    newIndex = elements.length;
-                                }
-                                
-                                // Get the perfume ID
-                                const perfumeId = parseInt(target.getAttribute('data-id'));
-                                
-                                // Update priorities
-                                const sortedPerfumes = [...perfumes].sort((a, b) => a.priority - b.priority);
-                                const currentPerfume = sortedPerfumes.find(p => p.id === perfumeId);
-                                const currentPriority = currentPerfume.priority;
-                                
-                                if (newIndex !== parseInt(target.getAttribute('data-index'))) {
-                                    // Reorder the perfumes
-                                    sortedPerfumes.splice(sortedPerfumes.findIndex(p => p.id === perfumeId), 1);
-                                    sortedPerfumes.splice(newIndex, 0, currentPerfume);
-                                    
-                                    // Update priorities
-                                    perfumes = perfumes.map(perfume => {
-                                        const newPriority = sortedPerfumes.findIndex(p => p.id === perfume.id) + 1;
-                                        return { ...perfume, priority: newPriority };
-                                    });
-                                    
-                                    renderPerfumes();
-                                }
-                            }
-                        }
-                    });
-            }, 100);
             
             updateWishlist();
         }
