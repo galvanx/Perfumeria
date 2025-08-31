@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -674,36 +673,38 @@
                 perfumeElement.innerHTML = `
                     <div class="flex flex-col md:flex-row">
                         <!-- Ranking and Controls -->
-                        <div class="flex-shrink-0 w-full md:w-16 bg-gradient-to-b from-amber-50 to-orange-50 flex flex-col items-center justify-center py-4 md:py-6">
-                            <span class="text-2xl font-bold text-amber-600">${index + 1}</span>
-                            
-                            <!-- Mobile arrow buttons -->
-                            <div class="md:hidden flex flex-col gap-1 mt-2">
-                                <button
-                                    onclick="changePriority(${perfume.id}, 'up')"
-                                    disabled="${perfume.priority === 1 ? 'disabled' : ''}"
-                                    class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
-                                >
+                        <div class="flex-shrink-0 w-full md:w-auto bg-gradient-to-b from-amber-50 to-orange-50 flex flex-col items-center justify-center py-4 md:py-6 px-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl font-bold text-amber-600">${index + 1}</span>
+                                
+                                <!-- Mobile arrow buttons -->
+                                <div class="md:hidden flex flex-col gap-1">
+                                    <button
+                                        onclick="changePriority(${perfume.id}, 'up')"
+                                        disabled="${perfume.priority === 1 ? 'disabled' : ''}"
+                                        class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onclick="changePriority(${perfume.id}, 'down')"
+                                        disabled="${perfume.priority === perfumes.length ? 'disabled' : ''}"
+                                        class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === perfumes.length ? 'opacity-50 cursor-not-allowed' : ''}"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Desktop drag handle -->
+                                <div class="hidden md:block text-gray-400">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16l-4-4m0 0l4-4m-4 4h18m0 0l-4 4m4-4l-4-4" />
                                     </svg>
-                                </button>
-                                <button
-                                    onclick="changePriority(${perfume.id}, 'down')"
-                                    disabled="${perfume.priority === perfumes.length ? 'disabled' : ''}"
-                                    class="p-1 rounded text-gray-600 hover:bg-gray-200 transition-colors duration-200 ${perfume.priority === perfumes.length ? 'opacity-50 cursor-not-allowed' : ''}"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                            </div>
-                            
-                            <!-- Desktop drag handle -->
-                            <div class="hidden md:block mt-1 text-gray-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16l-4-4m0 0l4-4m-4 4h18m0 0l-4 4m4-4l-4-4" />
-                                </svg>
+                                </div>
                             </div>
                         </div>
                         
@@ -776,19 +777,12 @@
                                     ${perfume.isDup ? `
                                     <div class="ml-6 space-y-2">
                                         <div class="bg-blue-50 border border-blue-200 rounded p-3">
-                                            <div class="flex items-start gap-3">
+                                            <div class="flex flex-col md:flex-row items-start gap-3">
                                                 <img 
                                                     src="${perfume.dupImage || 'https://placehold.co/60x80/6B46C1/FFFFFF?text=Original'}" 
                                                     alt="${perfume.dupName || 'Original'}"
-                                                    class="w-12 h-16 object-cover rounded flex-shrink-0 md:hidden"
+                                                    class="w-12 h-16 object-cover rounded md:w-16 md:h-20 flex-shrink-0"
                                                 />
-                                                <div class="flex-shrink-0 hidden md:block">
-                                                    <img 
-                                                        src="${perfume.dupImage || 'https://placehold.co/60x80/6B46C1/FFFFFF?text=Original'}" 
-                                                        alt="${perfume.dupName || 'Original'}"
-                                                        class="w-16 h-20 object-cover rounded"
-                                                    />
-                                                </div>
                                                 <div>
                                                     <p class="text-sm text-blue-800 font-semibold">Duplicado de:</p>
                                                     <p class="text-sm text-blue-800">${perfume.dupName || 'Original'}</p>
@@ -822,4 +816,3 @@
     </script>
 </body>
 </html>
-```
