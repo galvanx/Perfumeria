@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfume Collection Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -39,6 +41,23 @@
             }
         }
     </script>
+    <style>
+        .dragging {
+            opacity: 0.5;
+            transform: scale(1.02);
+            z-index: 1000;
+            position: relative;
+        }
+        
+        .dropzone {
+            min-height: 80px;
+        }
+        
+        .dropzone-over {
+            background-color: rgba(251, 191, 36, 0.1);
+            border: 2px dashed #f59e0b;
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
     <!-- Header -->
@@ -315,6 +334,28 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">¿Eliminar Perfume?</h2>
+            <p class="text-gray-600 mb-6">¿Estás seguro de que quieres eliminar este perfume de tu colección? Esta acción no se puede deshacer.</p>
+            <div class="flex gap-3">
+                <button
+                    onclick="confirmDelete()"
+                    class="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors duration-200"
+                >
+                    Eliminar
+                </button>
+                <button
+                    onclick="hideDeleteModal()"
+                    class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-400 transition-colors duration-200"
+                >
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Initialize data
         let perfumes = [
@@ -362,8 +403,10 @@
         let currentSeason = "all";
         let sortBy = "priority";
         let editingPerfume = null;
+        let deletingPerfumeId = null;
         let dragItem = null;
         let dragOverItem = null;
+        let interactInstances = [];
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -396,6 +439,40 @@
         // Hide edit form
         function hideEditForm() {
             document.getElementById('editForm').classList.add('hidden');
+        }
+
+        // Show delete modal
+        function showDeleteModal(id) {
+            deletingPerfumeId = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        // Hide delete modal
+        function hideDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            deletingPerfumeId = null;
+        }
+
+        // Confirm delete
+        function confirmDelete() {
+            if (deletingPerfumeId) {
+                // Remove from perfumes
+                perfumes = perfumes.filter(p => p.id !== deletingPerfumeId);
+                
+                // Remove from wishlist if present
+                wishlist = wishlist.filter(id => id !== deletingPerfumeId);
+                
+                // Update priorities
+                const sortedPerfumes = [...perfumes].sort((a, b) => a.priority - b.priority);
+                perfumes = perfumes.map(perfume => {
+                    const newIndex = sortedPerfumes.findIndex(p => p.id === perfume.id);
+                    return { ...perfume, priority: newIndex + 1 };
+                });
+                
+                hideDeleteModal();
+                renderPerfumes();
+                updateWishlist();
+            }
         }
 
         // Toggle duplicate fields in add form
@@ -568,43 +645,6 @@
             }
         }
 
-        // Handle drag start
-        function handleDragStart(e, index) {
-            dragItem = index;
-            e.dataTransfer.effectAllowed = "move";
-        }
-
-        // Handle drag enter
-        function handleDragEnter(e, index) {
-            dragOverItem = index;
-        }
-
-        // Handle drop
-        function handleDrop(e) {
-            e.preventDefault();
-            if (dragItem === null || dragOverItem === null) return;
-            
-            const copyListItems = [...perfumes].sort((a, b) => a.priority - b.priority);
-            const dragItemContent = copyListItems[dragItem];
-            copyListItems.splice(dragItem, 1);
-            copyListItems.splice(dragOverItem, 0, dragItemContent);
-            
-            // Update priorities based on new order
-            perfumes = perfumes.map(perfume => {
-                const newIndex = copyListItems.findIndex(p => p.id === perfume.id);
-                return { ...perfume, priority: newIndex + 1 };
-            });
-            
-            renderPerfumes();
-            dragItem = null;
-            dragOverItem = null;
-        }
-
-        // Handle drag over
-        function handleDragOver(e) {
-            e.preventDefault();
-        }
-
         // Render perfumes
         function renderPerfumes() {
             const perfumesList = document.getElementById('perfumesList');
@@ -623,19 +663,25 @@
                 return 0;
             });
             
+            // Clear existing interact instances
+            interactInstances.forEach(instance => {
+                if (instance.interactable) {
+                    instance.interactable.unset();
+                }
+            });
+            interactInstances = [];
+            
             filteredPerfumes.forEach((perfume, index) => {
                 const perfumeElement = document.createElement('div');
-                perfumeElement.className = 'hover:bg-gray-50 transition-colors duration-200';
-                perfumeElement.draggable = true;
-                perfumeElement.ondragstart = (e) => handleDragStart(e, sortedPerfumes.findIndex(p => p.id === perfume.id));
-                perfumeElement.ondragenter = (e) => handleDragEnter(e, sortedPerfumes.findIndex(p => p.id === perfume.id));
-                perfumeElement.ondragover = handleDragOver;
-                perfumeElement.ondrop = handleDrop;
+                perfumeElement.className = 'hover:bg-gray-50 transition-colors duration-200 dropzone';
+                perfumeElement.id = `perfume-${perfume.id}`;
+                perfumeElement.setAttribute('data-id', perfume.id);
+                perfumeElement.setAttribute('data-index', index);
                 
                 perfumeElement.innerHTML = `
                     <div class="flex">
                         <!-- Ranking Number (season-specific) -->
-                        <div class="flex-shrink-0 w-16 bg-gradient-to-b from-amber-50 to-orange-50 flex flex-col items-center justify-center py-6 cursor-move active:opacity-50">
+                        <div class="flex-shrink-0 w-16 bg-gradient-to-b from-amber-50 to-orange-50 flex flex-col items-center justify-center py-6 cursor-move">
                             <span class="text-2xl font-bold text-amber-600">${index + 1}</span>
                             <div class="mt-1 text-gray-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -650,12 +696,7 @@
                                 <img 
                                     src="${perfume.image}" 
                                     alt="${perfume.name}"
-                                    class="w-full h-40 object-cover rounded-lg cursor-move active:opacity-50"
-                                    draggable="true"
-                                    ondragstart="(e) => handleDragStart(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
-                                    ondragenter="(e) => handleDragEnter(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
-                                    ondragover="handleDragOver(event)"
-                                    ondrop="handleDrop(event)"
+                                    class="w-full h-40 object-cover rounded-lg cursor-move"
                                 />
                                 <button
                                     onclick="handleAddToWishlist(${perfume.id})"
@@ -669,12 +710,7 @@
                         </div>
                         
                         <!-- Details -->
-                        <div class="flex-1 p-6 cursor-move active:opacity-50" 
-                             draggable="true"
-                             ondragstart="(e) => handleDragStart(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
-                             ondragenter="(e) => handleDragEnter(e, ${sortedPerfumes.findIndex(p => p.id === perfume.id)})"
-                             ondragover="handleDragOver(event)"
-                             ondrop="handleDrop(event)">
+                        <div class="flex-1 p-6 cursor-move">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                                 <div>
                                     <h3 class="text-xl font-bold text-gray-800 mb-1">${perfume.name}</h3>
@@ -683,15 +719,24 @@
                                     </span>
                                 </div>
                                 
-                                <div class="mt-4 md:mt-0 flex items-center gap-2">
+                                <div class="mt-4 md:mt-0 flex items-center gap-1">
                                     <button
                                         onclick="startEditing(${perfume.id})"
-                                        class="bg-amber-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-amber-700 transition-colors duration-200 flex items-center gap-1"
+                                        class="bg-amber-100 text-amber-700 p-2 rounded-lg hover:bg-amber-200 transition-colors duration-200"
+                                        title="Editar"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
-                                        Editar
+                                    </button>
+                                    <button
+                                        onclick="showDeleteModal(${perfume.id})"
+                                        class="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition-colors duration-200"
+                                        title="Eliminar"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
@@ -733,7 +778,114 @@
                 `;
                 
                 perfumesList.appendChild(perfumeElement);
+                
+                // Store interact instance
+                interactInstances.push({
+                    id: perfume.id,
+                    interactable: null
+                });
             });
+            
+            // Initialize interact.js for drag and drop
+            setTimeout(() => {
+                interact('.dropzone')
+                    .draggable({
+                        inertia: true,
+                        modifiers: [
+                            interact.modifiers.restrictRect({
+                                restriction: 'parent',
+                                endOnly: true
+                            })
+                        ],
+                        autoScroll: true,
+                        listeners: {
+                            start (event) {
+                                event.target.classList.add('dragging');
+                            },
+                            move (event) {
+                                const target = event.target;
+                                const { x, y } = target.dataset;
+                                const dx = (parseFloat(x) || 0) + event.dx;
+                                const dy = (parseFloat(y) || 0) + event.dy;
+                                
+                                target.style.transform = `translate(${dx}px, ${dy}px)`;
+                                target.dataset.x = dx;
+                                target.dataset.y = dy;
+                                
+                                // Check for overlapping elements
+                                const rect = target.getBoundingClientRect();
+                                const elements = document.querySelectorAll('.dropzone');
+                                
+                                elements.forEach(el => {
+                                    if (el !== target) {
+                                        const elRect = el.getBoundingClientRect();
+                                        if (rect.top < elRect.bottom && 
+                                            rect.bottom > elRect.top && 
+                                            rect.left < elRect.right && 
+                                            rect.right > elRect.left) {
+                                            el.classList.add('dropzone-over');
+                                        } else {
+                                            el.classList.remove('dropzone-over');
+                                        }
+                                    }
+                                });
+                            },
+                            end (event) {
+                                event.target.classList.remove('dragging');
+                                event.target.style.transform = '';
+                                event.target.removeAttribute('data-x');
+                                event.target.removeAttribute('data-y');
+                                
+                                // Reset all dropzone classes
+                                document.querySelectorAll('.dropzone').forEach(el => {
+                                    el.classList.remove('dropzone-over');
+                                });
+                                
+                                // Find the target element
+                                const target = event.target;
+                                const mouseY = event.clientY;
+                                const elements = Array.from(document.querySelectorAll('.dropzone')).filter(el => el !== target);
+                                
+                                let newIndex = -1;
+                                for (let i = 0; i < elements.length; i++) {
+                                    const rect = elements[i].getBoundingClientRect();
+                                    const center = (rect.top + rect.bottom) / 2;
+                                    
+                                    if (mouseY < center) {
+                                        newIndex = i;
+                                        break;
+                                    }
+                                }
+                                
+                                if (newIndex === -1) {
+                                    newIndex = elements.length;
+                                }
+                                
+                                // Get the perfume ID
+                                const perfumeId = parseInt(target.getAttribute('data-id'));
+                                
+                                // Update priorities
+                                const sortedPerfumes = [...perfumes].sort((a, b) => a.priority - b.priority);
+                                const currentPerfume = sortedPerfumes.find(p => p.id === perfumeId);
+                                const currentPriority = currentPerfume.priority;
+                                
+                                if (newIndex !== parseInt(target.getAttribute('data-index'))) {
+                                    // Reorder the perfumes
+                                    sortedPerfumes.splice(sortedPerfumes.findIndex(p => p.id === perfumeId), 1);
+                                    sortedPerfumes.splice(newIndex, 0, currentPerfume);
+                                    
+                                    // Update priorities
+                                    perfumes = perfumes.map(perfume => {
+                                        const newPriority = sortedPerfumes.findIndex(p => p.id === perfume.id) + 1;
+                                        return { ...perfume, priority: newPriority };
+                                    });
+                                    
+                                    renderPerfumes();
+                                }
+                            }
+                        }
+                    });
+            }, 100);
             
             updateWishlist();
         }
@@ -751,3 +903,4 @@
     </script>
 </body>
 </html>
+```
